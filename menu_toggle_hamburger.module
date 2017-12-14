@@ -1,0 +1,76 @@
+<?php
+/**
+ * @file
+ *  Adds mobile menu toggle to Drupal sites.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function menu_toggle_hamburger_menu() {
+  $items = array();
+
+  $items['admin/settings/mobile-menu-toggle'] = array(
+    'title' => 'Mobile Menu Toggle',
+    'description' => t('Select menu and zones for mobile menu toggle'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('menu_toggle_hamburger_form'),
+    'access arguments' => array('administer menu'),
+    'file' => 'menu_toggle_hamburger.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_init().
+ */
+function menu_toggle_hamburger_init() {
+  // Set JS settings based on menu selected.
+  $menu_default = check_plain(variable_get('mobile_menu_menu', 'main-menu'));
+  $css_class = check_plain(variable_get('mobile_menu_css', ''));
+  $menu_block = variable_get('mobile_menu_block', FALSE);
+  $js_settings['menu_toggle_hamburger'] = array(
+    'default_menu' => $menu_default,
+    'css_class' => '#' . $menu_default,
+  );
+
+  // Add #block-menu as a prefix to class if the menu will be loaded via block.
+  if ($menu_block) {
+    $js_settings['menu_toggle_hamburger']['css_class'] = '#block-menu-' . $menu_default;
+  }
+
+  if (!empty($css_class)) {
+    $js_settings['menu_toggle_hamburger']['css_class'] = $css_class;
+  }
+  drupal_add_js($js_settings, 'setting');
+
+}
+
+function menu_toggle_hamburger_block($op = 'list', $delta = 0, $edit = array()) {
+  if ($op == 'list') {
+    $blocks[0]['info'] = t('Mobile Menu Toggle');
+    return $blocks;
+  }
+  elseif ($op == 'view') {
+    $block = array();
+    switch ($delta) {
+      case 0:
+        drupal_add_js(drupal_get_path('module', 'menu_toggle_hamburger') . '/menu_toggle_hamburger.js');
+        $block['content'] = theme('menu_toggle_hamburger');
+        break;
+    }
+    return $block;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function menu_toggle_hamburger_theme($existing, $type, $theme, $path) {
+  return array(
+    'menu_toggle_hamburger' => array(
+      'template' => 'menu_toggle_hamburger',
+    ),
+  );
+}
